@@ -152,13 +152,13 @@
   (define modify-untracked? #f)
   (define front-matter-re '#:default)
   (define quiet? #f)
+  (define file-pattern #f)
 
   (define -file-type-name #f)
-  (define -file-pattern #f)
   (define -leading-comment-re #f)
   (define -comment-prefix #f)
 
-  (define-values (license file-type-name file-pattern leading-comment-re comment-prefix)
+  (define-values (license file-type-name leading-comment-re comment-prefix)
     (command-line #:program program-name
                   #:once-each
                   [("-n" "--dry-run")
@@ -174,22 +174,25 @@
                   [("--no-front-matter-re")
                    "Disable skipping front matter"
                    (set! front-matter-re #f)]
+                  [("--file-pattern") superglob
+                   "Glob (with ** allowed as well as * and ?) for matching source files"
+                   (set! file-pattern superglob)]
                   [("--preset-racket")
                    "Presets for working with Racket files"
+                   (set! file-pattern "**.rkt")
                    (set! -file-type-name "Racket")
-                   (set! -file-pattern "**.rkt")
                    (set! -leading-comment-re "^;+ *")
                    (set! -comment-prefix ";;; ")]
                   [("--preset-typescript")
                    "Presets for working with TypeScript files"
+                   (set! file-pattern "**.ts")
                    (set! -file-type-name "TypeScript")
-                   (set! -file-pattern "**.ts")
                    (set! -leading-comment-re "^//+ *")
                    (set! -comment-prefix "/// ")]
                   [("--preset-javascript")
                    "Presets for working with JavaScript files"
+                   (set! file-pattern "**.js")
                    (set! -file-type-name "JavaScript")
-                   (set! -file-pattern "**.js")
                    (set! -leading-comment-re "^//+ *")
                    (set! -comment-prefix "/// ")]
                   [("-q" "--quiet")
@@ -197,12 +200,10 @@
                    (set! quiet? #t)]
                   #:args (license
                           [file-type-name #f]
-                          [file-pattern #f]
                           [leading-comment-re #f]
                           [comment-prefix #f])
                   (values license
                           (or file-type-name -file-type-name)
-                          (or file-pattern -file-pattern)
                           (cond [(or leading-comment-re -leading-comment-re) => pregexp] [else #f])
                           (or comment-prefix -comment-prefix))))
 
