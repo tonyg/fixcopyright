@@ -10,11 +10,18 @@ For example, in one of my Racket projects, I have
 
 in a `pre-commit` git hook, and
 
-    fixcopyright.rkt --preset-racket LGPL-3.0-or-later
+    fixcopyright:
+    	-fixcopyright.rkt --preset-racket LGPL-3.0-or-later
 
-as a script in the `Makefile`; and in a TypeScript project, I have
+as a target in the `Makefile`; and in a TypeScript project, I have
 
-    fixcopyright.rkt --preset-typescript --file-pattern 'packages/**.ts' GPL-3.0-or-later
-    fixcopyright.rkt --preset-javascript --file-pattern 'packages/**.js' GPL-3.0-or-later
+    fixcopyright.rkt -n --preset-typescript --file-pattern 'packages/**.ts' GPL-3.0-or-later
+    fixcopyright.rkt -n --preset-javascript --file-pattern 'packages/**.js' GPL-3.0-or-later
 
-as an available script.
+in a `pre-commit` hook and
+
+    fixcopyright:
+    	-fixcopyright.rkt --preset-typescript --file-pattern 'packages/**.ts' GPL-3.0-or-later
+    	-fixcopyright.rkt --preset-javascript --file-pattern 'packages/**.js' GPL-3.0-or-later
+
+in the `Makefile`.

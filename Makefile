@@ -29,4 +29,4 @@ licenses.json:
 	wget https://github.com/spdx/license-list-data/raw/main/json/licenses.json
 
 fixcopyright:
-	fixcopyright.rkt --preset-racket LGPL-3.0-or-later
+	-fixcopyright.rkt --preset-racket LGPL-3.0-or-later
