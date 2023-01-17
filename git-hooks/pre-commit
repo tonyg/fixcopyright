@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+exec 1>&2
+fixcopyright.rkt -n --preset-racket LGPL-3.0-or-later
