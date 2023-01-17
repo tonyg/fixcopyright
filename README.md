@@ -14,7 +14,7 @@ in a `pre-commit` git hook, and
 
 as a script in the `Makefile`; and in a TypeScript project, I have
 
-    fixcopyright.rkt --preset-typescript --file-pattern 'packages/**.ts'
-    fixcopyright.rkt --preset-javascript --file-pattern 'packages/**.js'
+    fixcopyright.rkt --preset-typescript --file-pattern 'packages/**.ts' GPL-3.0-or-later
+    fixcopyright.rkt --preset-javascript --file-pattern 'packages/**.js' GPL-3.0-or-later
 
 as an available script.
