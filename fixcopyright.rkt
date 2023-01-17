@@ -47,7 +47,7 @@
                    #:comment-prefix comment-prefix
                    #:license license
                    #:front-matter-re [front-matter-re0 '#:default]
-                   #:file-filter [file-filter (lambda (x) #t)]
+                   #:file-filter [file-filter file-exists?]
                    #:this-year [this-year0 #f]
                    #:user-name [user-name0 #f]
                    #:user-email [user-email0 #f]
