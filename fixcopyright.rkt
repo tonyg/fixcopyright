@@ -25,12 +25,13 @@
                    (unless (system* "/usr/bin/env" "git" "config" "--get" key)
                      (error 'get-git-config "Could not get git config for ~a" key))))))
 
-(define (is-tracked? f)
-  (call-with-output-file "/dev/null" #:exists 'append
-    (lambda (sink)
-      (parameterize ((current-error-port sink)
-                     (current-output-port sink))
-        (system* "/usr/bin/env" "git" "ls-files" "--error-unmatch" f)))))
+(define (get-tracked-files)
+  (list->set
+   (string-split (with-output-to-string
+                   (lambda ()
+                     (unless (system* "/usr/bin/env" "git" "ls-files")
+                       (error 'get-tracked-files "Could not git ls-files"))))
+                 "\n")))
 
 (define (make-copyright who low [hi #f])
   (if (and hi (not (string=? low hi)))
@@ -70,6 +71,9 @@
   (define matched-files (filter file-filter (glob file-pattern)))
   (define file-count (length matched-files))
   (define changed-files 0)
+
+  (define tracked-files (get-tracked-files))
+  (define (is-tracked? f) (set-member? tracked-files f))
 
   (for [(file-number (in-naturals))
         (f (in-list matched-files))]
