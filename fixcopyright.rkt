@@ -27,11 +27,12 @@
 
 (define (get-tracked-files)
   (list->set
-   (string-split (with-output-to-string
-                   (lambda ()
-                     (unless (system* "/usr/bin/env" "git" "ls-files")
-                       (error 'get-tracked-files "Could not git ls-files"))))
-                 "\n")))
+   (map (lambda (f) (build-path (current-directory) f))
+        (string-split (with-output-to-string
+                        (lambda ()
+                          (unless (system* "/usr/bin/env" "git" "ls-files")
+                            (error 'get-tracked-files "Could not git ls-files"))))
+                      "\n"))))
 
 (define (make-copyright who low [hi #f])
   (if (and hi (not (string=? low hi)))
