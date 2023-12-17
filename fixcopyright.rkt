@@ -43,8 +43,12 @@
 
 (define DEFAULT-FRONT-MATTER-RE "^#")
 
+(define (set-filter s pred)
+  (for/fold [(s s)] [(v (in-set s))]
+    (if (pred v) s (set-remove s v))))
+
 (define (fix-files #:file-type-name file-type-name
-                   #:file-pattern file-pattern
+                   #:file-patterns file-patterns
                    #:leading-comment-re leading-comment-re
                    #:comment-prefix comment-prefix
                    #:license license
@@ -69,7 +73,14 @@
 
   (define this-year (or this-year0 (number->string (date-year (current-date)))))
 
-  (define matched-files (filter file-filter (glob file-pattern)))
+  (define matched-files
+    (parameterize ((glob-capture-dotfiles? #t))
+      (set->list
+       (for/fold [(files (set))] [(entry (in-list file-patterns))]
+         (match-define (list op pattern) entry)
+         (match op
+           ['+ (set-union files (list->set (filter file-filter (glob pattern))))]
+           ['- (set-filter files (lambda (f) (not (glob-match? pattern f))))])))))
   (define file-count (length matched-files))
   (define changed-files 0)
 
@@ -157,7 +168,8 @@
   (define modify-untracked? #f)
   (define front-matter-re '#:default)
   (define quiet? #f)
-  (define file-pattern #f)
+  (define file-patterns #f)
+  (define preset-patterns #f)
 
   (define -file-type-name #f)
   (define -leading-comment-re #f)
@@ -181,22 +193,25 @@
                    (set! front-matter-re #f)]
                   [("--file-pattern") superglob
                    "Glob (with ** allowed as well as * and ?) for matching source files"
-                   (set! file-pattern superglob)]
+                   (set! file-patterns (cons (list '+ superglob) (or file-patterns '())))]
+                  [("--ignore") superglob
+                   "Glob (with ** allowed as well as * and ?) for files to ignore"
+                   (set! file-patterns (cons (list '- superglob) (or file-patterns '())))]
                   [("--preset-racket")
                    "Presets for working with Racket files"
-                   (set! file-pattern "**.rkt")
+                   (set! preset-patterns '((+ "**.rkt")))
                    (set! -file-type-name "Racket")
                    (set! -leading-comment-re "^;+ *")
                    (set! -comment-prefix ";;; ")]
                   [("--preset-typescript")
                    "Presets for working with TypeScript files"
-                   (set! file-pattern "**.ts")
+                   (set! preset-patterns '((- "**/node_modules/**") (+ "**.ts")))
                    (set! -file-type-name "TypeScript")
                    (set! -leading-comment-re "^//+ *")
                    (set! -comment-prefix "/// ")]
                   [("--preset-javascript")
                    "Presets for working with JavaScript files"
-                   (set! file-pattern "**.js")
+                   (set! preset-patterns '((- "**/node_modules/**") (+ "**.js")))
                    (set! -file-type-name "JavaScript")
                    (set! -leading-comment-re "^//+ *")
                    (set! -comment-prefix "/// ")]
@@ -219,13 +234,13 @@
   (unless license-details
     (error (string->symbol program-name) "Unknown license ID: ~a" license))
 
-  (unless (and file-type-name file-pattern leading-comment-re comment-prefix)
+  (unless (and file-type-name (or file-patterns preset-patterns) leading-comment-re comment-prefix)
     (eprintf "Please supply a preset or all of file-type-name, file-pattern, leading-comment-re, and comment-prefix.\n")
     (exit 2))
 
   (match-define (fix-files-stats total-file-count total-changed-files)
     (fix-files #:file-type-name file-type-name
-               #:file-pattern file-pattern
+               #:file-patterns (reverse (or file-patterns preset-patterns))
                #:leading-comment-re leading-comment-re
                #:comment-prefix comment-prefix
                #:license (hash-ref license-details 'licenseId)
