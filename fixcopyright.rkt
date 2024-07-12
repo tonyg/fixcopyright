@@ -1,7 +1,7 @@
 #!/usr/bin/env racket
 #lang racket
 ;;; SPDX-License-Identifier: LGPL-3.0-or-later
-;;; SPDX-FileCopyrightText: Copyright © 2021-2023 Tony Garnock-Jones <tonyg@leastfixedpoint.com>
+;;; SPDX-FileCopyrightText: Copyright © 2021-2024 Tony Garnock-Jones <tonyg@leastfixedpoint.com>
 
 (provide (struct-out fix-files-stats)
          fix-files)
@@ -177,6 +177,13 @@
 
   (define-values (license file-type-name leading-comment-re comment-prefix)
     (command-line #:program program-name
+                  #:multi
+                  [("--file-pattern") superglob
+                   "Glob (with ** allowed as well as * and ?) for matching source files"
+                   (set! file-patterns (cons (list '+ superglob) (or file-patterns '())))]
+                  [("--ignore") superglob
+                   "Glob (with ** allowed as well as * and ?) for files to ignore"
+                   (set! file-patterns (cons (list '- superglob) (or file-patterns '())))]
                   #:once-each
                   [("-n" "--dry-run")
                    "Do not write back changes to files"
@@ -191,12 +198,6 @@
                   [("--no-front-matter-re")
                    "Disable skipping front matter"
                    (set! front-matter-re #f)]
-                  [("--file-pattern") superglob
-                   "Glob (with ** allowed as well as * and ?) for matching source files"
-                   (set! file-patterns (cons (list '+ superglob) (or file-patterns '())))]
-                  [("--ignore") superglob
-                   "Glob (with ** allowed as well as * and ?) for files to ignore"
-                   (set! file-patterns (cons (list '- superglob) (or file-patterns '())))]
                   [("--preset-racket")
                    "Presets for working with Racket files"
                    (set! preset-patterns '((+ "**.rkt")))
