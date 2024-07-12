@@ -49,8 +49,9 @@
 
 (define (fix-files #:file-type-name file-type-name
                    #:file-patterns file-patterns
-                   #:leading-comment-re leading-comment-re
+                   #:comment-re comment-re
                    #:comment-prefix comment-prefix
+                   #:comment-suffix comment-suffix
                    #:license license
                    #:front-matter-re [front-matter-re0 '#:default]
                    #:file-filter [file-filter file-exists?]
@@ -98,9 +99,9 @@
                     ((front-matter lines) (if front-matter-re
                                               (splitf-at lines (re? front-matter-re))
                                               (values '() lines)))
-                    ((head tail) (splitf-at lines (re? leading-comment-re))))
+                    ((head tail) (splitf-at lines (re? comment-re))))
         (values front-matter head tail)))
-    (let* ((head (map (s leading-comment-re "") head))
+    (let* ((head (map (s comment-re "\\1") head))
            (head (map (lambda (l)
                         (match (regexp-match "^([^:]+): (.*)$" l)
                           [(list _ k v) (list k v)]
@@ -128,11 +129,12 @@
                       head))
            (head (map (lambda (l)
                         (if (string=? (cadr l) "")
-                            (string-trim comment-prefix)
+                            (string-trim (string-append comment-prefix (or comment-suffix "")))
                             (string-append comment-prefix
                                            (match l
                                              [(list #f v) v]
-                                             [(list k v) (format "~a: ~a" k v)]))))
+                                             [(list k v) (format "~a: ~a" k v)])
+                                           (or comment-suffix ""))))
                       head))
            (new-lines `(,@front-matter
                         ,@head
@@ -172,10 +174,11 @@
   (define preset-patterns #f)
 
   (define -file-type-name #f)
-  (define -leading-comment-re #f)
+  (define -comment-re #f)
   (define -comment-prefix #f)
+  (define -comment-suffix #f)
 
-  (define-values (license file-type-name leading-comment-re comment-prefix)
+  (define-values (license file-type-name comment-re comment-prefix comment-suffix)
     (command-line #:program program-name
                   #:multi
                   [("--file-pattern") superglob
@@ -202,31 +205,43 @@
                    "Presets for working with Racket files"
                    (set! preset-patterns '((+ "**.rkt")))
                    (set! -file-type-name "Racket")
-                   (set! -leading-comment-re "^;+ *")
-                   (set! -comment-prefix ";;; ")]
+                   (set! -comment-re "^;+ *(.*)$")
+                   (set! -comment-prefix ";;; ")
+                   (set! -comment-suffix #f)]
+                  [("--preset-svelte")
+                   "Presets for working with Svelte files"
+                   (set! preset-patterns '((- "**/node_modules/**") (+ "**.svelte")))
+                   (set! -file-type-name "Svelte")
+                   (set! -comment-re "^<!--+ *(.*) --+>$")
+                   (set! -comment-prefix "<!-- ")
+                   (set! -comment-suffix " -->")]
                   [("--preset-typescript")
                    "Presets for working with TypeScript files"
                    (set! preset-patterns '((- "**/node_modules/**") (+ "**.ts")))
                    (set! -file-type-name "TypeScript")
-                   (set! -leading-comment-re "^//+ *")
-                   (set! -comment-prefix "/// ")]
+                   (set! -comment-re "^//+ *(.*)$")
+                   (set! -comment-prefix "/// ")
+                   (set! -comment-suffix #f)]
                   [("--preset-javascript")
                    "Presets for working with JavaScript files"
                    (set! preset-patterns '((- "**/node_modules/**") (+ "**.js")))
                    (set! -file-type-name "JavaScript")
-                   (set! -leading-comment-re "^//+ *")
-                   (set! -comment-prefix "/// ")]
+                   (set! -comment-re "^//+ *(.*)$")
+                   (set! -comment-prefix "/// ")
+                   (set! -comment-suffix #f)]
                   [("-q" "--quiet")
                    "Disable progress reports during processing"
                    (set! quiet? #t)]
                   #:args (license
                           [file-type-name #f]
-                          [leading-comment-re #f]
-                          [comment-prefix #f])
+                          [comment-re #f]
+                          [comment-prefix #f]
+                          [comment-suffix #f])
                   (values license
                           (or file-type-name -file-type-name)
-                          (cond [(or leading-comment-re -leading-comment-re) => pregexp] [else #f])
-                          (or comment-prefix -comment-prefix))))
+                          (cond [(or comment-re -comment-re) => pregexp] [else #f])
+                          (or comment-prefix -comment-prefix)
+                          (or comment-suffix -comment-suffix))))
 
   (define license-details
     (ormap (lambda (L) (and (string-ci=? (hash-ref L 'licenseId) license) L))
@@ -235,15 +250,16 @@
   (unless license-details
     (error (string->symbol program-name) "Unknown license ID: ~a" license))
 
-  (unless (and file-type-name (or file-patterns preset-patterns) leading-comment-re comment-prefix)
-    (eprintf "Please supply a preset or all of file-type-name, file-pattern, leading-comment-re, and comment-prefix.\n")
+  (unless (and file-type-name (or file-patterns preset-patterns) comment-re comment-prefix)
+    (eprintf "Please supply a preset or all of file-type-name, file-pattern, comment-re, and comment-prefix.\n")
     (exit 2))
 
   (match-define (fix-files-stats total-file-count total-changed-files)
     (fix-files #:file-type-name file-type-name
                #:file-patterns (reverse (or file-patterns preset-patterns))
-               #:leading-comment-re leading-comment-re
+               #:comment-re comment-re
                #:comment-prefix comment-prefix
+               #:comment-suffix comment-suffix
                #:license (hash-ref license-details 'licenseId)
                #:front-matter-re front-matter-re
                #:quiet? quiet?

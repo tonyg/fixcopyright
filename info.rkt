@@ -1,6 +1,6 @@
 #lang setup/infotab
 ;;; SPDX-License-Identifier: LGPL-3.0-or-later
-;;; SPDX-FileCopyrightText: Copyright © 2023 Tony Garnock-Jones <tonyg@leastfixedpoint.com>
+;;; SPDX-FileCopyrightText: Copyright © 2023-2024 Tony Garnock-Jones <tonyg@leastfixedpoint.com>
 
 (define collection "fixcopyright")
 (define deps '("base"))
